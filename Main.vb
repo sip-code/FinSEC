@@ -5,7 +5,7 @@ Public Class Main
     Private Property CurrentFile As String
 
     Private Sub GetFilingData(ByVal pstrFileName As String)
-
+        'Test
         lstExcelTab.SuspendLayout()
 
         Try
