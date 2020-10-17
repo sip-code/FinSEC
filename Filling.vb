@@ -29,18 +29,25 @@ Public Class Filing
     Private mrgxFinData As New Regex("(?<=<a class=""xbrlviewer"" href="")[^""]*(?="">View Excel Document<\/a>)", RegexOptions.Compiled)
     Private mrgxCentralIndexKey As New Regex("(?<=CIK=)\d*", RegexOptions.Compiled)
 
-    Private Async Sub txtCompanyTicket_KeyUp(sender As Object, e As KeyEventArgs) Handles txtCompanyTicket.KeyUp
+    Private WithEvents mprg As New Progress(Of Int32)
+    Private Sub mprg_ProgressChanged(sender As Object, e As Int32) Handles mprg.ProgressChanged
+        prgCurrent.Value = e
+    End Sub
+
+
+    Private Async Sub txtCompanyTicket_KeyUp(sender As Object, e As KeyEventArgs) Handles txtCompanyTicket.KeyUp, Me.KeyUp,
+                                                                                          btnOk.KeyUp, btnCancel.KeyUp
         If e.KeyCode = Keys.Enter Then
             Dim strTicket As String = txtCompanyTicket.Text
             If String.IsNullOrEmpty(strTicket) Then
                 MsgBox("You must provide a valid CIK")
             Else
+
                 If Not Directory.Exists(CompanyDataDirectory) Then Directory.CreateDirectory(CompanyDataDirectory)
-                Debug.Print(Threading.Thread.CurrentThread.ManagedThreadId)
+                Await GetFilingAsync(CompanyDataDirectory, mprg) '.ConfigureAwait(False)
+
                 DialogResult = DialogResult.OK
                 Close()
-
-                Await GetFilingAsync(CompanyDataDirectory).ConfigureAwait(False)
             End If
         ElseIf e.KeyCode = Keys.Escape Then
             DialogResult = DialogResult.Cancel
@@ -48,24 +55,26 @@ Public Class Filing
         End If
     End Sub
 
+
+
     Private Async Sub btnOk_Click(sender As Object, e As EventArgs) Handles btnOk.Click
 
         If String.IsNullOrEmpty(CompanyDataDirectory) Then
             MsgBox("You must provide a valid CIK")
         Else
             If Not Directory.Exists(CompanyDataDirectory) Then Directory.CreateDirectory(CompanyDataDirectory)
-            Await GetFilingAsync(CompanyDataDirectory)
+            Await GetFilingAsync(CompanyDataDirectory, mprg)
             DialogResult = DialogResult.OK
             Close()
         End If
     End Sub
 
-    Private Sub btnCancel_Click(sender As Object, e As EventArgs)
+    Private Sub btnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
         DialogResult = DialogResult.Cancel
         Close()
     End Sub
 
-    Private Async Function GetFilingAsync(ByVal pstrCompanyDataDirectory As String) As Task
+    Private Async Function GetFilingAsync(ByVal pstrCompanyDataDirectory As String, ByVal pprg As IProgress(Of Int32)) As Task
 
         Dim strCIK As String = Path.GetFileName(pstrCompanyDataDirectory) 'Get Central Index Key
 
@@ -96,11 +105,15 @@ Public Class Filing
             q.Add("CIK", strCIK)
             q.Add("start", i * 100)
             q.Add("count", 100)
-
             lstTask.Add(Task.Run(Function() GetInteractiveLinks(q.ToString)))
         Next
 
-        Await Task.WhenAll(lstTask).ConfigureAwait(False)
+        For i As Int64 = 0 To lstTask.Count
+            Await Task.WhenAny(lstTask) '.ConfigureAwait(False)
+            pprg.Report((i * 50) / lstTask.Count)
+        Next
+
+        Await Task.WhenAll(lstTask) '.ConfigureAwait(False)
         lstTask.Clear()
         Dim SECFiling As IEnumerable(Of SECFiling) = From tmp In cbgData
                                                      Where tmp.InteractiveDataLink <> "" 'AndAlso {"10-Q", "10-K"}.Contains(tmp.FilingType)
@@ -113,6 +126,12 @@ Public Class Filing
 
             lstTask.Add(Task.Run(Function() DownloadFinancialReportAsync(item.InteractiveDataLink, strDownload)))
         Next
+
+        For i As Int64 = 0 To lstTask.Count
+            Await Task.WhenAny(lstTask) '.ConfigureAwait(False)
+            pprg.Report(((i * 50) / lstTask.Count) + 50)
+        Next
+
 
         Await Task.WhenAll(lstTask).ConfigureAwait(False)
 
@@ -171,5 +190,6 @@ Public Class Filing
         End If
 
     End Function
+
 
 End Class

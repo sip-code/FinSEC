@@ -114,7 +114,6 @@ Public Class Main
                 treFileExplorer.Enabled = True
             Case Else
         End Select
-        Debug.Print(e.Node.Name)
     End Sub
 
 
