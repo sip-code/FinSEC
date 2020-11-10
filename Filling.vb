@@ -4,6 +4,19 @@ Imports System.Text.RegularExpressions
 Imports System.Net.Http
 
 Public Class Filing
+
+    Private mobjRequestor As Main
+    Private mstrRequestorTitle As String
+    Public Sub New(Optional ByVal sender As Main = Nothing)
+
+        ' This call is required by the designer.
+        InitializeComponent()
+
+        ' Add any initialization after the InitializeComponent() call.
+        mobjRequestor = sender
+        mstrRequestorTitle = sender.Text
+    End Sub
+
     Private cbgData As New Concurrent.ConcurrentBag(Of SECFiling)
     Friend Shared ReadOnly Property EdgarDataDirectory As String
         Get
@@ -29,10 +42,6 @@ Public Class Filing
     Private mrgxFinData As New Regex("(?<=<a class=""xbrlviewer"" href="")[^""]*(?="">View Excel Document<\/a>)", RegexOptions.Compiled)
     Private mrgxCentralIndexKey As New Regex("(?<=CIK=)\d*", RegexOptions.Compiled)
 
-    Private WithEvents mprg As New Progress(Of Int32)
-    Private Sub mprg_ProgressChanged(sender As Object, e As Int32) Handles mprg.ProgressChanged
-        prgCurrent.Value = e
-    End Sub
 
 
     Private Async Sub txtCompanyTicket_KeyUp(sender As Object, e As KeyEventArgs) Handles txtCompanyTicket.KeyUp, Me.KeyUp,
@@ -42,12 +51,13 @@ Public Class Filing
             If String.IsNullOrEmpty(strTicket) Then
                 MsgBox("You must provide a valid CIK")
             Else
-
-                If Not Directory.Exists(CompanyDataDirectory) Then Directory.CreateDirectory(CompanyDataDirectory)
-                Await GetFilingAsync(CompanyDataDirectory, mprg) '.ConfigureAwait(False)
-
+                mobjRequestor.Text = $"Retrieving {strTicket} data"
                 DialogResult = DialogResult.OK
                 Close()
+
+                If Not Directory.Exists(CompanyDataDirectory) Then Directory.CreateDirectory(CompanyDataDirectory)
+                Await GetFilingAsync(CompanyDataDirectory)
+                mobjRequestor.Text = mstrRequestorTitle
             End If
         ElseIf e.KeyCode = Keys.Escape Then
             DialogResult = DialogResult.Cancel
@@ -62,10 +72,11 @@ Public Class Filing
         If String.IsNullOrEmpty(CompanyDataDirectory) Then
             MsgBox("You must provide a valid CIK")
         Else
-            If Not Directory.Exists(CompanyDataDirectory) Then Directory.CreateDirectory(CompanyDataDirectory)
-            Await GetFilingAsync(CompanyDataDirectory, mprg)
             DialogResult = DialogResult.OK
             Close()
+
+            If Not Directory.Exists(CompanyDataDirectory) Then Directory.CreateDirectory(CompanyDataDirectory)
+            Await GetFilingAsync(CompanyDataDirectory)
         End If
     End Sub
 
@@ -74,7 +85,7 @@ Public Class Filing
         Close()
     End Sub
 
-    Private Async Function GetFilingAsync(ByVal pstrCompanyDataDirectory As String, ByVal pprg As IProgress(Of Int32)) As Task
+    Private Async Function GetFilingAsync(ByVal pstrCompanyDataDirectory As String) As Task
 
         Dim strCIK As String = Path.GetFileName(pstrCompanyDataDirectory) 'Get Central Index Key
 
@@ -108,12 +119,9 @@ Public Class Filing
             lstTask.Add(Task.Run(Function() GetInteractiveLinks(q.ToString)))
         Next
 
-        For i As Int64 = 0 To lstTask.Count
-            Await Task.WhenAny(lstTask) '.ConfigureAwait(False)
-            pprg.Report((i * 50) / lstTask.Count)
-        Next
 
-        Await Task.WhenAll(lstTask) '.ConfigureAwait(False)
+
+        Await Task.WhenAll(lstTask).ConfigureAwait(False)
         lstTask.Clear()
         Dim SECFiling As IEnumerable(Of SECFiling) = From tmp In cbgData
                                                      Where tmp.InteractiveDataLink <> "" 'AndAlso {"10-Q", "10-K"}.Contains(tmp.FilingType)
@@ -125,11 +133,6 @@ Public Class Filing
                                                        item.FilingType.Replace("-", "")))
 
             lstTask.Add(Task.Run(Function() DownloadFinancialReportAsync(item.InteractiveDataLink, strDownload)))
-        Next
-
-        For i As Int64 = 0 To lstTask.Count
-            Await Task.WhenAny(lstTask) '.ConfigureAwait(False)
-            pprg.Report(((i * 50) / lstTask.Count) + 50)
         Next
 
 

@@ -28,7 +28,6 @@ Partial Class Filing
         Me.btnOk = New System.Windows.Forms.Button()
         Me.PictureBox1 = New System.Windows.Forms.PictureBox()
         Me.pnlIcon = New System.Windows.Forms.Panel()
-        Me.prgCurrent = New System.Windows.Forms.ProgressBar()
         Me.pnlOptions = New System.Windows.Forms.Panel()
         CType(Me.PictureBox1, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.pnlIcon.SuspendLayout()
@@ -89,14 +88,6 @@ Partial Class Filing
         Me.pnlIcon.Size = New System.Drawing.Size(41, 40)
         Me.pnlIcon.TabIndex = 1
         '
-        'prgCurrent
-        '
-        Me.prgCurrent.Dock = System.Windows.Forms.DockStyle.Bottom
-        Me.prgCurrent.Location = New System.Drawing.Point(0, 90)
-        Me.prgCurrent.Name = "prgCurrent"
-        Me.prgCurrent.Size = New System.Drawing.Size(320, 10)
-        Me.prgCurrent.TabIndex = 2
-        '
         'pnlOptions
         '
         Me.pnlOptions.BackColor = System.Drawing.SystemColors.ButtonHighlight
@@ -112,10 +103,9 @@ Partial Class Filing
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(320, 100)
+        Me.ClientSize = New System.Drawing.Size(320, 89)
         Me.Controls.Add(Me.pnlOptions)
         Me.Controls.Add(Me.btnOk)
-        Me.Controls.Add(Me.prgCurrent)
         Me.Controls.Add(Me.btnCancel)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow
         Me.MaximizeBox = False
@@ -137,6 +127,5 @@ Partial Class Filing
     Friend WithEvents btnOk As Button
     Friend WithEvents PictureBox1 As PictureBox
     Friend WithEvents pnlIcon As Panel
-    Friend WithEvents prgCurrent As ProgressBar
     Friend WithEvents pnlOptions As Panel
 End Class

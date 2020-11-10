@@ -73,7 +73,7 @@ Public Class Main
 
     Private Sub tsiFilings_Click(sender As Object, e As EventArgs) Handles tsiFilings.Click
         tmrFileExploreUpdate.Stop()
-        Using CIK As New Filing
+        Using CIK As New Filing(Me)
             CIK.ShowDialog()
             CIK.Dispose()
         End Using
