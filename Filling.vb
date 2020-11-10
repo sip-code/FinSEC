@@ -86,14 +86,18 @@ Public Class Filing
     End Sub
 
     Private Async Function GetFilingAsync(ByVal pstrCompanyDataDirectory As String) As Task
+        'TODO: Need to add logic to limit request from SEC site to 10 per second
 
         Dim strCIK As String = Path.GetFileName(pstrCompanyDataDirectory) 'Get Central Index Key
 
         Dim qi As Specialized.NameValueCollection = HttpUtility.ParseQueryString(String.Empty)
         qi.Add("CIK", strCIK)
 
-        Dim hcInitialSearch As New HttpClient()
 
+
+        Dim hcInitialSearch As New HttpClient()
+        
+        
         Dim hcrIntialSearchResponse As HttpResponseMessage = Await hcInitialSearch.GetAsync("https://www.sec.gov/cgi-bin/browse-edgar?" & qi.ToString)
         If Not hcrIntialSearchResponse.IsSuccessStatusCode Then Exit Function
         Dim hcrInitialSearchResponseHTML As String = Await hcrIntialSearchResponse.Content.ReadAsStringAsync
@@ -108,6 +112,9 @@ Public Class Filing
 
         Dim lngFiles As Int64 = Math.Ceiling(mrgxTableRow.Matches(hcrInitialSearchResponseHTML).Count / 100)
 
+  
+
+        
         Dim lstTask As New List(Of Task)
 
         For i As Int32 = 0 To lngFiles + 1
